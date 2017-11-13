@@ -3,7 +3,7 @@ import java.util.*;
 
 
 
-class Solution {
+class SampleGenerate {
   static List<String[]> info = new ArrayList<>();
 
 
@@ -99,7 +99,7 @@ class Solution {
   }
 
 /**
-* This is a self-defined comparator which compares array of strings according to the age. 
+* This is a self-defined comparator which compares array of strings according to the age.
 */
 
   static class MyComparator implements Comparator<String[]>{
