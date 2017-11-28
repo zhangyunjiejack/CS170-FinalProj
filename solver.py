@@ -1,4 +1,6 @@
 import argparse
+from constraint import *
+import operator
 
 """
 ======================================================================
@@ -19,7 +21,28 @@ def solve(num_wizards, num_constraints, wizards, constraints):
     Output:
         An array of wizard names in the ordering your algorithm returns
     """
-    return []
+    ages = []
+    resultList = []
+
+    for i in range(1, num_wizards + 1):
+        ages.append(i)
+
+    problem = Problem()
+    wizardsAges = {}
+    for wizard in wizards:
+        problem.addVariable(wizard, ages)
+
+    for constraint in constraints:
+        problem.addConstraint(lambda a, b, c: (c < a and c < b) or (c > a and c > b), (constraint[0], constraint[1], constraint[2]))
+
+    resultDict = problem.getSolution()
+    sorted_tuples = sorted(resultDict.items(), key = operator.itemgetter(1))
+
+    for each in sorted_tuples:
+        resultList.append(each[0])
+
+    return resultList
+
 
 """
 ======================================================================
