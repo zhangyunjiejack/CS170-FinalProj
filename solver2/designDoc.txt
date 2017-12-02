@@ -1,0 +1,2 @@
+Graph:
+    1. It is a directed grpah. If A -> B, it means B's age is larger than A, A's age is smaller than B. 
