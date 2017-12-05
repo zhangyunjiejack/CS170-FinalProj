@@ -41,6 +41,9 @@ def checkCycle(g):
     return any(visit(v) for v in g)
 
 def topological(graph):
+    """
+    Runs a topological sort on the current graph and return the vertices in the desired order as a list.
+    """
     order = collections.deque()
     enter = set(graph)
     state = {}
@@ -60,9 +63,6 @@ def topological(graph):
         dfs(enter.pop())
     return order
 
-def processConstraints(constraints):
-    newConstraints = []
-    
 
 def solve(num_wizards, num_constraints, wizards, constraints):
     """

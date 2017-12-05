@@ -1,6 +1,11 @@
 import argparse
 from constraint import *
 import operator
+import collections
+import copy
+from functools import lru_cache as cache
+
+
 
 """
 ======================================================================
@@ -8,6 +13,60 @@ import operator
 ======================================================================
 """
 
+GRAY, BLACK = 0, 1
+
+def checkCycle(g):
+    """Return True if the directed graph g has a cycle.
+    g must be represented as a dictionary mapping vertices to
+    iterables of neighbouring vertices.
+
+    For example:
+    >>> cyclic({1: (2,), 2: (3,), 3: (1,)})
+    True
+    >>> cyclic({1: (2,), 2: (3,), 3: (4,)})
+    False
+
+    """
+    path = set()
+    visited = set()
+
+    def visit(vertex):
+        if vertex in visited:
+            return False
+        visited.add(vertex)
+        path.add(vertex)
+        for neighbour in g.get(vertex, ()):
+            if neighbour in path or visit(neighbour):
+                return True
+        path.remove(vertex)
+        return False
+
+    return any(visit(v) for v in g)
+
+def topological(graph):
+    order = collections.deque()
+    enter = set(graph)
+    state = {}
+
+    def dfs(node):
+        state[node] = GRAY
+        for k in graph.get(node, ()):
+            sk = state.get(k, None)
+            if sk == GRAY: raise ValueError("cycle")
+            if sk == BLACK: continue
+            enter.discard(k)
+            dfs(k)
+        order.appendleft(node)
+        state[node] = BLACK
+
+    while enter:
+        dfs(enter.pop())
+    return order
+
+def processConstraints(constraints):
+    newConstraints = []
+
+@cache(maxsize=None)
 def solve(num_wizards, num_constraints, wizards, constraints):
     """
     Write your algorithm here.
@@ -16,33 +75,43 @@ def solve(num_wizards, num_constraints, wizards, constraints):
         num_constraints: Number of constraints
         wizards: An array of wizard names, in no particular order
         constraints: A 2D-array of constraints,
-                     where constraints[0] may take the form ['A', 'B', 'C']i
-
+                     where constraints[0] may take the form ['A', 'B', 'C']
     Output:
         An array of wizard names in the ordering your algorithm returns
     """
-    ages = []
-    resultList = []
 
-    for i in range(1, num_wizards + 1):
-        ages.append(i)
+    graph = {}
+    branches = []
+    constraintIndices = []
 
-    problem = Problem()
-    wizardsAges = {}
     for wizard in wizards:
-        problem.addVariable(wizard, ages)
+        graph[wizard] = set()
+    index = 0
+    while (index < len(constraints)):
+    	constraint = constraints[index]
+        a = constraint[0]
+        b = constraint[1]
+        c = constraint[2]
 
-    for constraint in constraints:
-        problem.addConstraint(lambda a, b, c: (c < a and c < b) or (c > a and c > b), (constraint[0], constraint[1], constraint[2]))
+        graph2 = copy.deepcopy(graph)
 
-    resultDict = problem.getSolution()
-    sorted_tuples = sorted(resultDict.items(), key = operator.itemgetter(1))
+        graph[c].add(a)
+        graph[c].add(b)
+        graph2[a].add(c)
+        graph2[b].add(c)
 
-    for each in sorted_tuples:
-        resultList.append(each[0])
+        if not checkCycle(graph2):
+            branches.append(graph2)
+            constraintIndices.append(index)
 
-    return resultList
+        if not checkCycle(graph):
+            index += 1
+        else:
+        	graph = branches.pop()
+        	index = constraintIndices.pop() + 1
 
+    result = topological(graph)
+    return list(result)
 
 """
 ======================================================================

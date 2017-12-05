@@ -1,12 +1,68 @@
 import argparse
 from constraint import *
 import operator
+import collections
+import copy
+from numba import jit
 
 """
 ======================================================================
   Complete the following function.
 ======================================================================
 """
+
+GRAY, BLACK = 0, 1
+
+def checkCycle(g):
+    """Return True if the directed graph g has a cycle.
+    g must be represented as a dictionary mapping vertices to
+    iterables of neighbouring vertices. For example:
+
+    >>> cyclic({1: (2,), 2: (3,), 3: (1,)})
+    True
+    >>> cyclic({1: (2,), 2: (3,), 3: (4,)})
+    False
+
+    """
+    path = set()
+    visited = set()
+
+    def visit(vertex):
+        if vertex in visited:
+            return False
+        visited.add(vertex)
+        path.add(vertex)
+        for neighbour in g.get(vertex, ()):
+            if neighbour in path or visit(neighbour):
+                return True
+        path.remove(vertex)
+        return False
+
+    return any(visit(v) for v in g)
+
+def topological(graph):
+    """
+    Run a topological sort on the given graph so that the vertices are returned in the desired order in the form of the list. 
+    """
+    order = collections.deque()
+    enter = set(graph)
+    state = {}
+
+    def dfs(node):
+        state[node] = GRAY
+        for k in graph.get(node, ()):
+            sk = state.get(k, None)
+            if sk == GRAY: raise ValueError("cycle")
+            if sk == BLACK: continue
+            enter.discard(k)
+            dfs(k)
+        order.appendleft(node)
+        state[node] = BLACK
+
+    while enter:
+        dfs(enter.pop())
+    return order
+
 
 def solve(num_wizards, num_constraints, wizards, constraints):
     """
@@ -21,27 +77,81 @@ def solve(num_wizards, num_constraints, wizards, constraints):
     Output:
         An array of wizard names in the ordering your algorithm returns
     """
-    ages = []
-    resultList = []
 
-    for i in range(1, num_wizards + 1):
-        ages.append(i)
+    all_graphs = []
+    graph = {}
+    branches = []
+    constraintIndices = []
 
-    problem = Problem()
-    wizardsAges = {}
     for wizard in wizards:
-        problem.addVariable(wizard, ages)
+    	# print(wizard)
+        graph[wizard] = set()
 
-    for constraint in constraints:
-        problem.addConstraint(lambda a, b, c: (c < a and c < b) or (c > a and c > b), (constraint[0], constraint[1], constraint[2]))
+    # all_graphs.append(graph)
 
-    resultDict = problem.getSolution()
-    sorted_tuples = sorted(resultDict.items(), key = operator.itemgetter(1))
+    index = 0
+    while (index < len(constraints)):
+    	# print(str(index) + "\n")
 
-    for each in sorted_tuples:
-        resultList.append(each[0])
+    	constraint = constraints[index]
+        a = constraint[0]
+        b = constraint[1]
+        c = constraint[2]
 
-    return resultList
+        # new_graphs = []
+
+        # for graph in all_graphs:
+
+        graph1 = copy.deepcopy(graph)
+        graph2 = copy.deepcopy(graph)
+
+        graph1[c].add(a)
+        graph1[c].add(b)
+        graph2[a].add(c)
+        graph2[b].add(c)
+        # new_graphs.append(graph1)
+        # new_graphs.append(graph2)
+
+
+        if not checkCycle(graph2):
+            branches.append(graph2)
+            constraintIndices.append(index)
+
+        if not checkCycle(graph1):
+            graph = graph1
+            index += 1
+        else:
+        	graph = branches.pop()
+        	index = constraintIndices.pop() + 1
+
+    # print(all_graphs)
+    result = topological(graph)
+    return list(result)
+
+    # return wizards
+
+
+    # ages = []
+    # resultList = []
+
+    # for i in range(1, num_wizards + 1):
+    #     ages.append(i)
+
+    # problem = Problem()
+    # wizardsAges = {}
+    # for wizard in wizards:
+    #     problem.addVariable(wizard, ages)
+
+    # for constraint in constraints:
+    #     problem.addConstraint(lambda a, b, c: (c < a and c < b) or (c > a and c > b), (constraint[0], constraint[1], constraint[2]))
+
+    # resultDict = problem.getSolution()
+    # sorted_tuples = sorted(resultDict.items(), key = operator.itemgetter(1))
+
+    # for each in sorted_tuples:
+    #     resultList.append(each[0])
+
+    # return resultList
 
 
 """
